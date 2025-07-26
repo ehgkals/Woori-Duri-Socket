@@ -13,6 +13,8 @@ let userStatus = [
   { id: 2, ip: "192.168.219.112", status: "offline", name: "" },
 ];
 
+let readyStatus = {};
+
 io.on("connection", (socket) => {
   // 내부망 IP 가져오기
   let clientIp = socket.handshake.address;
@@ -46,6 +48,24 @@ io.on("connection", (socket) => {
     io.emit("userStatus", userStatus);
   });
 
+  // 준비 완료 요청
+  socket.on("requestReady", () => {
+    readyStatus = {}; // 준비 상태 초기화
+    io.emit("showReadyModal");
+  });
+
+  // 준비 완료 확인
+  socket.on("readyResponse", ({ ip }) => {
+    readyStatus[ip] = true;
+    const total = userStatus.filter((user) => user.status === "online").length;
+
+    // 모두 준비 완료했으면 다음 화면으로
+    if (Object.keys(readyStatus).length >= total) {
+      io.emit("moveToNextScreen");
+      readyStatus = {};
+    }
+  });
+
   // 접속 종료 시 status를 offline으로 변경
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id, "IP:", clientIp);
@@ -53,6 +73,11 @@ io.on("connection", (socket) => {
       seat.ip === clientIp ? { ...seat, status: "offline" } : seat
     );
     io.emit("userStatus", userStatus);
+
+    // 접속 해제 시 삭제
+    Object.keys(readyStatus).forEach((key) => {
+      if (key === clientIp) delete readyStatus[key];
+    });
   });
 });
 
