@@ -37,9 +37,11 @@ io.on("connection", (socket) => {
 
   // 처음 접속 시 이름 설정
   socket.on("setUserName", (userName) => {
-    userStatus = userStatus.map((seat) => {
-      seat.ip === clientIp ? { ...seat, userName } : seat;
-    });
+    userStatus = userStatus.map((seat) =>
+      seat.ip === clientIp
+        ? { ...seat, name: userName, status: "online" }
+        : seat
+    );
     console.log(`${clientIp} 이름 설정됨: ${userName}`);
     io.emit("userStatus", userStatus);
   });
