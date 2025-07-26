@@ -9,11 +9,9 @@ const io = new Server(server, {
 });
 
 let userStatus = [
-  { id: 1, ip: "192.168.219.104", status: "offline", name: "" },
-  { id: 2, ip: "192.168.219.112", status: "offline", name: "" },
+  { id: 1, ip: "192.168.219.104", status: "offline", name: "", ready: false },
+  { id: 2, ip: "192.168.219.112", status: "offline", name: "", ready: false },
 ];
-
-let readyStatus = {};
 
 io.on("connection", (socket) => {
   // 내부망 IP 가져오기
@@ -31,11 +29,12 @@ io.on("connection", (socket) => {
 
   // 접속한 사용자의 status를 online으로 변경
   userStatus = userStatus.map((seat) =>
-    seat.ip === clientIp ? { ...seat, status: "online" } : seat
+    seat.ip === clientIp ? { ...seat, status: "online", ready: false } : seat
   );
 
   // 좌석 업데이트
-  io.emit("userStatus", userStatus);
+  socket.emit("userStatus", { list: userStatus, me: clientIp }); // 나한테만
+  io.emit("userStatus", { list: userStatus });
 
   // 처음 접속 시 이름 설정
   socket.on("setUserName", (userName) => {
@@ -44,40 +43,49 @@ io.on("connection", (socket) => {
         ? { ...seat, name: userName, status: "online" }
         : seat
     );
-    console.log(`${clientIp} 이름 설정됨: ${userName}`);
-    io.emit("userStatus", userStatus);
+    socket.emit("userStatus", { list: userStatus, me: clientIp }); // 나한테만
+    io.emit("userStatus", { list: userStatus });
   });
 
   // 준비 완료 요청
   socket.on("requestReady", () => {
-    readyStatus = {}; // 준비 상태 초기화
+    userStatus = userStatus.map((user) =>
+      user.status === "online" ? { ...user, ready: false } : user
+    );
+    io.emit("userStatus", userStatus);
     io.emit("showReadyModal");
   });
 
   // 준비 완료 확인
   socket.on("readyResponse", ({ ip }) => {
-    readyStatus[ip] = true;
-    const total = userStatus.filter((user) => user.status === "online").length;
-
-    // 모두 준비 완료했으면 다음 화면으로
-    if (Object.keys(readyStatus).length >= total) {
-      io.emit("moveToNextScreen");
-      readyStatus = {};
-    }
-  });
-
-  // 접속 종료 시 status를 offline으로 변경
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id, "IP:", clientIp);
-    userStatus = userStatus.map((seat) =>
-      seat.ip === clientIp ? { ...seat, status: "offline" } : seat
+    userStatus = userStatus.map((user) =>
+      user.ip === ip ? { ...user, ready: true } : user
     );
     io.emit("userStatus", userStatus);
 
-    // 접속 해제 시 삭제
-    Object.keys(readyStatus).forEach((key) => {
-      if (key === clientIp) delete readyStatus[key];
-    });
+    // 모두 준비 완료했으면 다음 화면으로
+    const total = userStatus.filter((u) => u.status === "online").length;
+    const readyCount = userStatus.filter(
+      (u) => u.status === "online" && u.ready
+    ).length;
+
+    if (readyCount === total && total > 0) {
+      console.log("moveToNextScreen emit", { readyCount, total });
+      io.emit("moveToNextScreen");
+      // 준비상태 초기화
+      userStatus = userStatus.map((u) =>
+        u.status === "online" ? { ...u, ready: false } : u
+      );
+      io.emit("userStatus", userStatus);
+    }
+  });
+
+  // 접속 종료 시 status를 offline, ready를 false으로 변경
+  socket.on("disconnect", () => {
+    userStatus = userStatus.map((seat) =>
+      seat.ip === clientIp ? { ...seat, status: "offline", ready: false } : seat
+    );
+    io.emit("userStatus", userStatus);
   });
 });
 
