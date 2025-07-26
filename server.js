@@ -14,21 +14,34 @@ let userStatus = [
 ];
 
 io.on("connection", (socket) => {
-  console.log("User connected: ", socket.id);
+  // 내부망 IP 가져오기
+  let clientIp = socket.handshake.address;
+  if (socket.handshake.headers["x-forwarded-for"]) {
+    clientIp = socket.handshake.headers["x-forwarded-for"].split(",")[0].trim();
+  }
 
-  socket.on("userIP", (ip) => {
-    console.log("User IP: ", ip);
+  // 프리픽스 제거
+  if (clientIp.startsWith("::ffff:")) {
+    clientIp = clientIp.replace("::ffff:", "");
+  }
 
-    userStatus = userStatus.map((seat) => {
-      if (seat.ip === ip) seat.status = "online";
-      return seat;
-    });
+  console.log("User connected:", socket.id, "IP:", clientIp);
 
-    io.emit("userStatus", userStatus);
-  });
+  // 접속한 사용자의 status를 online으로 변경
+  userStatus = userStatus.map((seat) =>
+    seat.ip === clientIp ? { ...seat, status: "online" } : seat
+  );
 
+  // 좌석 업데이트
+  io.emit("userStatus", userStatus);
+
+  // 접속 종료 시 status를 offline으로 변경
   socket.on("disconnect", () => {
-    console.log("User disconnected: ", socket.id);
+    console.log("User disconnected:", socket.id, "IP:", clientIp);
+    userStatus = userStatus.map((seat) =>
+      seat.ip === clientIp ? { ...seat, status: "offline" } : seat
+    );
+    io.emit("userStatus", userStatus);
   });
 });
 
