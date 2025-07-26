@@ -9,8 +9,8 @@ const io = new Server(server, {
 });
 
 let userStatus = [
-  { id: 1, ip: "192.168.219.104", status: "offline" },
-  { id: 2, ip: "192.168.219.112", status: "offline" },
+  { id: 1, ip: "192.168.219.104", status: "offline", name: "" },
+  { id: 2, ip: "192.168.219.112", status: "offline", name: "" },
 ];
 
 io.on("connection", (socket) => {
@@ -34,6 +34,15 @@ io.on("connection", (socket) => {
 
   // 좌석 업데이트
   io.emit("userStatus", userStatus);
+
+  // 처음 접속 시 이름 설정
+  socket.on("setUserName", (userName) => {
+    userStatus = userStatus.map((seat) => {
+      seat.ip === clientIp ? { ...seat, userName } : seat;
+    });
+    console.log(`${clientIp} 이름 설정됨: ${userName}`);
+    io.emit("userStatus", userStatus);
+  });
 
   // 접속 종료 시 status를 offline으로 변경
   socket.on("disconnect", () => {
