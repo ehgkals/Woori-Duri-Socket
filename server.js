@@ -15,6 +15,7 @@ let userStatus = [
     status: "offline",
     name: "",
     ready: false,
+    currentWord: 0,
     finishTime: null,
   },
   {
@@ -23,6 +24,7 @@ let userStatus = [
     status: "offline",
     name: "",
     ready: false,
+    currentWord: 0,
     finishTime: null,
   },
 ];
@@ -91,6 +93,14 @@ io.on("connection", (socket) => {
       );
       io.emit("userStatus", { list: userStatus });
     }
+  });
+
+  // 게임 중 단어 갯수 갱신
+  socket.on("playingGame", ({ ip, currentWord }) => {
+    userStatus = userStatus.map((user) =>
+      user.ip === ip ? { ...user, currentWord } : user
+    );
+    io.emit("userStatus", { list: userStatus });
   });
 
   // 게임이 끝난 User의 시간 기록
