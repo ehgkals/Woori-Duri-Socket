@@ -25,7 +25,7 @@ io.on("connection", (socket) => {
     clientIp = clientIp.replace("::ffff:", "");
   }
 
-  console.log("User connected:", socket.id, "IP:", clientIp);
+  console.log("User connected:", clientIp);
 
   // 접속한 사용자의 status를 online으로 변경
   userStatus = userStatus.map((seat) =>
@@ -34,7 +34,7 @@ io.on("connection", (socket) => {
 
   // 좌석 업데이트
   socket.emit("userStatus", { list: userStatus, me: clientIp }); // 나한테만
-  io.emit("userStatus", { list: userStatus });
+  io.emit("userStatus", { list: userStatus, me: clientIp });
 
   // 처음 접속 시 이름 설정
   socket.on("setUserName", (userName) => {
@@ -70,7 +70,6 @@ io.on("connection", (socket) => {
     ).length;
 
     if (readyCount === total && total > 0) {
-      console.log("moveToNextScreen emit", { readyCount, total });
       io.emit("moveToNextScreen");
       // 준비상태 초기화
       userStatus = userStatus.map((u) =>
@@ -82,6 +81,7 @@ io.on("connection", (socket) => {
 
   // 접속 종료 시 status를 offline, ready를 false으로 변경
   socket.on("disconnect", () => {
+    console.log("User disconnected:", clientIp);
     userStatus = userStatus.map((seat) =>
       seat.ip === clientIp ? { ...seat, status: "offline", ready: false } : seat
     );
