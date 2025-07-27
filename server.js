@@ -9,7 +9,7 @@ const io = new Server(server, {
 });
 
 let userStatus = [
-  { id: 1, ip: "192.168.219.104", status: "offline", name: "", ready: false },
+  { id: 1, ip: "192.168.219.109", status: "offline", name: "", ready: false },
   { id: 2, ip: "192.168.219.112", status: "offline", name: "", ready: false },
 ];
 
@@ -52,7 +52,7 @@ io.on("connection", (socket) => {
     userStatus = userStatus.map((user) =>
       user.status === "online" ? { ...user, ready: false } : user
     );
-    io.emit("userStatus", userStatus);
+    io.emit("userStatus", { list: userStatus });
     io.emit("showReadyModal");
   });
 
@@ -61,7 +61,7 @@ io.on("connection", (socket) => {
     userStatus = userStatus.map((user) =>
       user.ip === ip ? { ...user, ready: true } : user
     );
-    io.emit("userStatus", userStatus);
+    io.emit("userStatus", { list: userStatus });
 
     // 모두 준비 완료했으면 다음 화면으로
     const total = userStatus.filter((u) => u.status === "online").length;
@@ -76,7 +76,7 @@ io.on("connection", (socket) => {
       userStatus = userStatus.map((u) =>
         u.status === "online" ? { ...u, ready: false } : u
       );
-      io.emit("userStatus", userStatus);
+      io.emit("userStatus", { list: userStatus });
     }
   });
 
@@ -85,7 +85,7 @@ io.on("connection", (socket) => {
     userStatus = userStatus.map((seat) =>
       seat.ip === clientIp ? { ...seat, status: "offline", ready: false } : seat
     );
-    io.emit("userStatus", userStatus);
+    io.emit("userStatus", { list: userStatus });
   });
 });
 
