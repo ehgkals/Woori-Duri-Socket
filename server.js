@@ -28,6 +28,7 @@ let userStatus = [
     finishTime: null,
   },
 ];
+const readyToStartUsers = new Set();
 
 io.on("connection", (socket) => {
   // 내부망 IP 가져오기
@@ -92,6 +93,17 @@ io.on("connection", (socket) => {
         u.status === "online" ? { ...u, ready: false } : u
       );
       io.emit("userStatus", { list: userStatus });
+    }
+  });
+
+  socket.on("readyToStart", () => {
+    console.log("ready");
+    readyToStartUsers.add(clientIp);
+    // 모두 준비됐는지 체크
+    const onlineCount = userStatus.filter((u) => u.status === "online").length;
+    if (readyToStartUsers.size === onlineCount && onlineCount > 0) {
+      io.emit("startCountdown");
+      readyToStartUsers.clear(); // 초기화
     }
   });
 
