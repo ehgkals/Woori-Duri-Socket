@@ -9,8 +9,22 @@ const io = new Server(server, {
 });
 
 let userStatus = [
-  { id: 1, ip: "192.168.219.109", status: "offline", name: "", ready: false },
-  { id: 2, ip: "192.168.219.112", status: "offline", name: "", ready: false },
+  {
+    id: 1,
+    ip: "192.168.219.109",
+    status: "offline",
+    name: "",
+    ready: false,
+    finishTime: null,
+  },
+  {
+    id: 2,
+    ip: "192.168.219.112",
+    status: "offline",
+    name: "",
+    ready: false,
+    finishTime: null,
+  },
 ];
 
 io.on("connection", (socket) => {
@@ -34,7 +48,7 @@ io.on("connection", (socket) => {
 
   // 좌석 업데이트
   socket.emit("userStatus", { list: userStatus, me: clientIp }); // 나한테만
-  io.emit("userStatus", { list: userStatus, me: clientIp });
+  io.emit("userStatus", { list: userStatus });
 
   // 처음 접속 시 이름 설정
   socket.on("setUserName", (userName) => {
@@ -77,6 +91,15 @@ io.on("connection", (socket) => {
       );
       io.emit("userStatus", { list: userStatus });
     }
+  });
+
+  // 게임이 끝난 User의 시간 기록
+  socket.on("finishGame", ({ ip, finishTime }) => {
+    userStatus = userStatus.map((user) =>
+      user.ip === ip ? { ...user, finishTime } : user
+    );
+
+    io.emit("userStatus", { list: userStatus });
   });
 
   // 접속 종료 시 status를 offline, ready를 false으로 변경
