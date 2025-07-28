@@ -11,7 +11,7 @@ const io = new Server(server, {
 let userStatus = [
   {
     id: 1,
-    ip: "192.168.219.109",
+    ip: "192.168.1.73",
     status: "offline",
     name: "",
     ready: false,
@@ -20,7 +20,7 @@ let userStatus = [
   },
   {
     id: 2,
-    ip: "192.168.219.112",
+    ip: "192.168.0.4",
     status: "offline",
     name: "",
     ready: false,
@@ -53,6 +53,10 @@ io.on("connection", (socket) => {
   socket.emit("userStatus", { list: userStatus, me: clientIp }); // 나한테만
   io.emit("userStatus", { list: userStatus });
 
+  socket.on("getUserStatus", () => {
+    socket.emit("userStatus", { list: userStatus, me: clientIp });
+  });
+
   // 처음 접속 시 이름 설정
   socket.on("setUserName", (userName) => {
     userStatus = userStatus.map((seat) =>
@@ -60,6 +64,7 @@ io.on("connection", (socket) => {
         ? { ...seat, name: userName, status: "online" }
         : seat
     );
+
     socket.emit("userStatus", { list: userStatus, me: clientIp }); // 나한테만
     io.emit("userStatus", { list: userStatus });
   });
@@ -96,10 +101,10 @@ io.on("connection", (socket) => {
     }
   });
 
+  // 게임 로딩 + 사용자 정보 다 받아오면 시작
   socket.on("readyToStart", () => {
     console.log("ready");
     readyToStartUsers.add(clientIp);
-    // 모두 준비됐는지 체크
     const onlineCount = userStatus.filter((u) => u.status === "online").length;
     if (readyToStartUsers.size === onlineCount && onlineCount > 0) {
       io.emit("startCountdown");
@@ -128,7 +133,15 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected:", clientIp);
     userStatus = userStatus.map((seat) =>
-      seat.ip === clientIp ? { ...seat, status: "offline", ready: false } : seat
+      seat.ip === clientIp
+        ? {
+            ...seat,
+            status: "offline",
+            ready: false,
+            currentWord: 0,
+            finishTime: null,
+          }
+        : seat
     );
     io.emit("userStatus", { list: userStatus });
   });
