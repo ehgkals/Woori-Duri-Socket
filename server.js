@@ -103,7 +103,6 @@ io.on("connection", (socket) => {
 
   // 게임 로딩 + 사용자 정보 다 받아오면 시작
   socket.on("readyToStart", () => {
-    console.log("ready");
     readyToStartUsers.add(clientIp);
     const onlineCount = userStatus.filter((u) => u.status === "online").length;
     if (readyToStartUsers.size === onlineCount && onlineCount > 0) {
