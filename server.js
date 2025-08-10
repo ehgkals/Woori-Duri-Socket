@@ -478,6 +478,6 @@ app.get("/", (req, res) => {
   res.json({ message: "Socket.io server is running" });
 });
 
-server.listen(4000, () => {
+server.listen(4000, "0.0.0.0", () => {
   console.log("Socket.io server started on port 4000");
 });
